@@ -84,7 +84,13 @@ export const updateSettings = asyncHandler(async (req: Request, res: Response) =
 
   // Only update provided fields
   if (openaiApiKey !== undefined) {
-    updateData.openaiApiKey = openaiApiKey ? encrypt(openaiApiKey) : null;
+    // Don't update if it's the placeholder value
+    if (openaiApiKey && openaiApiKey !== '***configured***') {
+      updateData.openaiApiKey = encrypt(openaiApiKey);
+    } else if (!openaiApiKey) {
+      updateData.openaiApiKey = null;
+    }
+    // If it's '***configured***', skip updating (keep existing value)
   }
   if (openaiModel !== undefined) {
     updateData.openaiModel = openaiModel;
@@ -96,19 +102,35 @@ export const updateSettings = asyncHandler(async (req: Request, res: Response) =
     updateData.openaiTemperature = openaiTemperature;
   }
   if (gofileToken !== undefined) {
-    updateData.gofileToken = gofileToken ? encrypt(gofileToken) : null;
+    if (gofileToken && gofileToken !== '***configured***') {
+      updateData.gofileToken = encrypt(gofileToken);
+    } else if (!gofileToken) {
+      updateData.gofileToken = null;
+    }
   }
   if (gofileRootFolder !== undefined) {
     updateData.gofileRootFolder = gofileRootFolder;
   }
   if (qstashToken !== undefined) {
-    updateData.qstashToken = qstashToken ? encrypt(qstashToken) : null;
+    if (qstashToken && qstashToken !== '***configured***') {
+      updateData.qstashToken = encrypt(qstashToken);
+    } else if (!qstashToken) {
+      updateData.qstashToken = null;
+    }
   }
   if (qstashCurrentSigningKey !== undefined) {
-    updateData.qstashCurrentSigningKey = qstashCurrentSigningKey ? encrypt(qstashCurrentSigningKey) : null;
+    if (qstashCurrentSigningKey && qstashCurrentSigningKey !== '***configured***') {
+      updateData.qstashCurrentSigningKey = encrypt(qstashCurrentSigningKey);
+    } else if (!qstashCurrentSigningKey) {
+      updateData.qstashCurrentSigningKey = null;
+    }
   }
   if (qstashNextSigningKey !== undefined) {
-    updateData.qstashNextSigningKey = qstashNextSigningKey ? encrypt(qstashNextSigningKey) : null;
+    if (qstashNextSigningKey && qstashNextSigningKey !== '***configured***') {
+      updateData.qstashNextSigningKey = encrypt(qstashNextSigningKey);
+    } else if (!qstashNextSigningKey) {
+      updateData.qstashNextSigningKey = null;
+    }
   }
   if (rateLimitPerHour !== undefined) {
     updateData.rateLimitPerHour = rateLimitPerHour;

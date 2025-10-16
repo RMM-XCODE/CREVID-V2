@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-
 import { Input } from '@/components/ui/input'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
+import { ErrorModal } from '@/components/ui/error-modal'
+import { useErrorHandler } from '@/hooks/useErrorHandler'
 import { Volume2, RefreshCw, Calendar, FileText, Settings, Upload, Link, ExternalLink, Copy } from 'lucide-react'
 
 export function GenerateTTS() {
@@ -27,6 +28,7 @@ export function GenerateTTS() {
   const [contentList, setContentList] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [isGenerating, setIsGenerating] = useState(false)
+  const { errorState, showError, hideError, handleFetchError } = useErrorHandler()
 
   // Fetch content dari backend
   useEffect(() => {
@@ -37,15 +39,23 @@ export function GenerateTTS() {
     try {
       setLoading(true)
       const response = await fetch('http://localhost:3001/api/content')
+      
+      if (!response.ok) {
+        await handleFetchError(response, 'Gagal mengambil daftar content')
+        return
+      }
+      
       const data = await response.json()
       
       if (data.success) {
         // Tampilkan semua content, biarkan user pilih mana yang ingin di-generate TTS
         const contents = data.data || []
         setContentList(contents)
+      } else {
+        showError('Content Error', 'Gagal mengambil daftar content', data)
       }
     } catch (error) {
-      console.error('Error fetching content:', error)
+      showError('Network Error', 'Gagal terhubung ke server', error)
     } finally {
       setLoading(false)
     }
@@ -54,7 +64,7 @@ export function GenerateTTS() {
   const handleGenerateTTS = async (content: any) => {
     // Validasi script
     if (!content.script || content.script.trim().length === 0) {
-      alert('Content ini belum memiliki script. Silakan generate content terlebih dahulu.')
+      showError('Validation Error', 'Content ini belum memiliki script. Silakan generate content terlebih dahulu.', { content_id: content.id })
       return
     }
 
@@ -73,17 +83,23 @@ export function GenerateTTS() {
         })
       })
 
+      if (!response.ok) {
+        await handleFetchError(response, 'Gagal generate TTS')
+        setIsGenerating(false)
+        return
+      }
+
       const data = await response.json()
       
       if (data.success) {
         // Poll job status
         pollJobStatus(data.data.job_id)
       } else {
-        throw new Error(data.error || 'Failed to generate TTS')
+        showError('Generate Error', 'Gagal generate TTS', data)
+        setIsGenerating(false)
       }
     } catch (error) {
-      console.error('Error generating TTS:', error)
-      alert('Gagal generate TTS. Pastikan backend sudah running dan API keys sudah dikonfigurasi.')
+      showError('Network Error', 'Gagal terhubung ke server. Pastikan backend sudah running dan API keys sudah dikonfigurasi.', error)
       setIsGenerating(false)
     }
   }
@@ -91,6 +107,13 @@ export function GenerateTTS() {
   const pollJobStatus = async (jobId: string) => {
     try {
       const response = await fetch(`http://localhost:3001/api/jobs/${jobId}`)
+      
+      if (!response.ok) {
+        await handleFetchError(response, 'Gagal mengecek status job')
+        setIsGenerating(false)
+        return
+      }
+      
       const data = await response.json()
       
       if (data.success) {
@@ -101,15 +124,18 @@ export function GenerateTTS() {
           // Refresh content list
           fetchContentList()
         } else if (job.status === 'failed') {
-          throw new Error(job.error_message || 'Job failed')
+          showError('Job Failed', job.error_message || 'Job processing failed', job)
+          setIsGenerating(false)
         } else {
           // Continue polling
           setTimeout(() => pollJobStatus(jobId), 2000)
         }
+      } else {
+        showError('Job Status Error', 'Gagal mengecek status job', data)
+        setIsGenerating(false)
       }
     } catch (error) {
-      console.error('Error polling job status:', error)
-      alert('Error checking job status')
+      showError('Network Error', 'Gagal terhubung ke server saat mengecek status job', error)
       setIsGenerating(false)
     }
   }
@@ -535,6 +561,15 @@ export function GenerateTTS() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Error Modal */}
+      <ErrorModal
+        isOpen={errorState.isOpen}
+        onClose={hideError}
+        title={errorState.title}
+        message={errorState.message}
+        error={errorState.error}
+      />
     </div>
   )
 }

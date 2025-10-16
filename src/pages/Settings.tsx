@@ -3,6 +3,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
+import { ErrorModal } from '@/components/ui/error-modal'
+import { useErrorHandler } from '@/hooks/useErrorHandler'
 import { 
   Settings as SettingsIcon, 
   Key, 
@@ -18,6 +20,7 @@ export function Settings() {
   const [showApiKey, setShowApiKey] = useState(false)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const { errorState, showError, hideError, handleFetchError } = useErrorHandler()
   const [settings, setSettings] = useState({
     openaiApiKey: '',
     openaiModel: 'gpt-4o',
@@ -49,6 +52,12 @@ export function Settings() {
     try {
       setLoading(true)
       const response = await fetch('http://localhost:3001/api/settings')
+      
+      if (!response.ok) {
+        await handleFetchError(response, 'Gagal mengambil data settings')
+        return
+      }
+      
       const data = await response.json()
       
       if (data.success) {
@@ -56,9 +65,11 @@ export function Settings() {
           ...prev,
           ...data.data
         }))
+      } else {
+        showError('Settings Error', 'Gagal mengambil data settings', data)
       }
     } catch (error) {
-      console.error('Error fetching settings:', error)
+      showError('Network Error', 'Gagal terhubung ke server', error)
     } finally {
       setLoading(false)
     }
@@ -75,6 +86,11 @@ export function Settings() {
         body: JSON.stringify(settings)
       })
 
+      if (!response.ok) {
+        await handleFetchError(response, 'Gagal menyimpan settings')
+        return
+      }
+
       const data = await response.json()
       
       if (data.success) {
@@ -82,11 +98,10 @@ export function Settings() {
         // Refresh settings to get updated data
         await fetchSettings()
       } else {
-        throw new Error(data.error || 'Failed to save settings')
+        showError('Save Error', 'Gagal menyimpan settings', data)
       }
     } catch (error) {
-      console.error('Error saving settings:', error)
-      alert('Gagal menyimpan settings: ' + (error instanceof Error ? error.message : 'Unknown error'))
+      showError('Network Error', 'Gagal terhubung ke server saat menyimpan', error)
     } finally {
       setSaving(false)
     }
@@ -141,19 +156,15 @@ export function Settings() {
 
             <div>
               <label className="text-sm font-medium mb-2 block">Model</label>
-              <select 
+              <Input
+                type="text"
                 value={settings.openaiModel}
                 onChange={(e) => setSettings({...settings, openaiModel: e.target.value})}
-                className="w-full p-2 border rounded-md"
-              >
-                <option value="gpt-4o">GPT-4o (Latest)</option>
-                <option value="gpt-4o-mini">GPT-4o Mini</option>
-                <option value="gpt-4-turbo">GPT-4 Turbo</option>
-                <option value="gpt-4">GPT-4</option>
-                <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
-              </select>
+                placeholder="Masukkan nama model OpenAI (contoh: gpt-4o, gpt-4o-mini, gpt-4)"
+                className="w-full"
+              />
               <p className="text-xs text-muted-foreground mt-1">
-                GPT-4o adalah model terbaru dengan performa optimal
+                Masukkan nama model OpenAI yang ingin digunakan. Contoh: gpt-4o, gpt-4o-mini, gpt-4-turbo, gpt-4, gpt-3.5-turbo
               </p>
             </div>
 
@@ -570,6 +581,15 @@ export function Settings() {
           </Button>
         </div>
       </div>
+
+      {/* Error Modal */}
+      <ErrorModal
+        isOpen={errorState.isOpen}
+        onClose={hideError}
+        title={errorState.title}
+        message={errorState.message}
+        error={errorState.error}
+      />
     </div>
   )
 }

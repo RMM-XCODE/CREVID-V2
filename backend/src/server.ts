@@ -2,10 +2,8 @@ import dotenv from 'dotenv';
 import { resolve } from 'path';
 import moduleAlias from 'module-alias';
 
-// Setup module aliases for production
-if (process.env.NODE_ENV === 'production') {
-  moduleAlias.addAlias('@', resolve(__dirname));
-}
+// Setup module aliases for both development and production
+moduleAlias.addAlias('@', resolve(__dirname));
 
 // Load environment variables
 dotenv.config({ path: resolve(__dirname, '../.env') });

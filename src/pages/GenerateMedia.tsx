@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
+import { ErrorModal } from '@/components/ui/error-modal'
+import { useErrorHandler } from '@/hooks/useErrorHandler'
 import { Image, Video, Wand2, RefreshCw, Copy, ArrowLeft, Calendar, FileText, Settings, Upload, MessageSquare, Clipboard, X, Link, ExternalLink } from 'lucide-react'
 
 export function GenerateMedia() {
@@ -12,6 +14,7 @@ export function GenerateMedia() {
   const [selectedScenes, setSelectedScenes] = useState<number[]>([])
   const [isGenerating, setIsGenerating] = useState(false)
   const [generatedMedia, setGeneratedMedia] = useState<any>(null)
+  const { errorState, showError, hideError, handleFetchError } = useErrorHandler()
   
   // Media preset configuration
   const [mediaPresetConfig, setMediaPresetConfig] = useState('')
@@ -40,15 +43,23 @@ export function GenerateMedia() {
     try {
       setLoading(true)
       const response = await fetch('http://localhost:3001/api/content')
+      
+      if (!response.ok) {
+        await handleFetchError(response, 'Gagal mengambil daftar content')
+        return
+      }
+      
       const data = await response.json()
       
       if (data.success) {
         // Filter hanya konten yang belum ada media atau bisa generate media
         const contents: Content[] = data.data || []
         setContentList(contents)
+      } else {
+        showError('Content Error', 'Gagal mengambil daftar content', data)
       }
     } catch (error) {
-      console.error('Error fetching content:', error)
+      showError('Network Error', 'Gagal terhubung ke server', error)
     } finally {
       setLoading(false)
     }
@@ -189,17 +200,23 @@ export function GenerateMedia() {
         })
       })
 
+      if (!response.ok) {
+        await handleFetchError(response, 'Gagal generate media')
+        setIsGenerating(false)
+        return
+      }
+
       const data = await response.json()
       
       if (data.success) {
         // Poll job status
         pollJobStatus(data.data.job_id)
       } else {
-        throw new Error(data.error || 'Failed to generate media')
+        showError('Generate Error', 'Gagal generate media', data)
+        setIsGenerating(false)
       }
     } catch (error) {
-      console.error('Error generating media:', error)
-      alert('Gagal generate media. Pastikan backend sudah running dan API keys sudah dikonfigurasi.')
+      showError('Network Error', 'Gagal terhubung ke server. Pastikan backend sudah running dan API keys sudah dikonfigurasi.', error)
       setIsGenerating(false)
     }
   }
@@ -207,6 +224,13 @@ export function GenerateMedia() {
   const pollJobStatus = async (jobId: string) => {
     try {
       const response = await fetch(`http://localhost:3001/api/jobs/${jobId}`)
+      
+      if (!response.ok) {
+        await handleFetchError(response, 'Gagal mengecek status job')
+        setIsGenerating(false)
+        return
+      }
+      
       const data = await response.json()
       
       if (data.success) {
@@ -218,15 +242,18 @@ export function GenerateMedia() {
           // Refresh content list
           fetchContentList()
         } else if (job.status === 'failed') {
-          throw new Error(job.error_message || 'Job failed')
+          showError('Job Failed', job.error_message || 'Job processing failed', job)
+          setIsGenerating(false)
         } else {
           // Continue polling
           setTimeout(() => pollJobStatus(jobId), 2000)
         }
+      } else {
+        showError('Job Status Error', 'Gagal mengecek status job', data)
+        setIsGenerating(false)
       }
     } catch (error) {
-      console.error('Error polling job status:', error)
-      alert('Error checking job status')
+      showError('Network Error', 'Gagal terhubung ke server saat mengecek status job', error)
       setIsGenerating(false)
     }
   }
@@ -1064,6 +1091,15 @@ ${tempVideoPreset}`
           </CardContent>
         </Card>
       )}
+
+      {/* Error Modal */}
+      <ErrorModal
+        isOpen={errorState.isOpen}
+        onClose={hideError}
+        title={errorState.title}
+        message={errorState.message}
+        error={errorState.error}
+      />
     </div>
   )
 }

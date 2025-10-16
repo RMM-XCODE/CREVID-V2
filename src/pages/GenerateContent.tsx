@@ -4,6 +4,8 @@ import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
+import { ErrorModal } from '@/components/ui/error-modal'
+import { useErrorHandler } from '@/hooks/useErrorHandler'
 import { Wand2, Copy, Download, RefreshCw, FileText, Link2, Settings } from 'lucide-react'
 
 export function GenerateContent() {
@@ -18,6 +20,9 @@ export function GenerateContent() {
   
   // Modal states
   const [showPresetModal, setShowPresetModal] = useState(false)
+  
+  // Error handling
+  const { errorState, showError, hideError, handleFetchError } = useErrorHandler()
   
   const [isGenerating, setIsGenerating] = useState(false)
   const [generatedContent, setGeneratedContent] = useState<any>(null)
@@ -87,6 +92,12 @@ Validation Rules:
         })
       })
 
+      if (!response.ok) {
+        await handleFetchError(response, 'Gagal generate content')
+        setIsGenerating(false)
+        return
+      }
+
       const data = await response.json()
       
       if (data.success) {
@@ -96,11 +107,11 @@ Validation Rules:
         // Poll for job status
         pollJobStatus(data.data.job_id)
       } else {
-        throw new Error(data.error || 'Failed to generate content')
+        showError('Generate Error', 'Gagal generate content', data)
+        setIsGenerating(false)
       }
     } catch (error) {
-      console.error('Error generating content:', error)
-      alert('Gagal generate content. Pastikan backend sudah running dan API keys sudah dikonfigurasi di Settings.')
+      showError('Network Error', 'Gagal terhubung ke server. Pastikan backend sudah running dan API keys sudah dikonfigurasi di Settings.', error)
       setIsGenerating(false)
     }
   }
@@ -108,6 +119,13 @@ Validation Rules:
   const pollJobStatus = async (jobId: string) => {
     try {
       const response = await fetch(`http://localhost:3001/api/jobs/${jobId}`)
+      
+      if (!response.ok) {
+        await handleFetchError(response, 'Gagal mengecek status job')
+        setIsGenerating(false)
+        return
+      }
+      
       const data = await response.json()
       
       if (data.success) {
@@ -121,20 +139,22 @@ Validation Rules:
           if (job.result_data && job.result_data.scenes && Array.isArray(job.result_data.scenes)) {
             setGeneratedContent(job.result_data)
           } else {
-            console.error('Invalid result data structure:', job.result_data)
-            alert('Generated content has invalid structure')
+            showError('Content Error', 'Generated content has invalid structure', job.result_data)
           }
           setIsGenerating(false)
         } else if (job.status === 'failed') {
-          throw new Error(job.error_message || 'Job failed')
+          showError('Job Failed', job.error_message || 'Job processing failed', job)
+          setIsGenerating(false)
         } else {
           // Continue polling
           setTimeout(() => pollJobStatus(jobId), 2000)
         }
+      } else {
+        showError('Job Status Error', 'Gagal mengecek status job', data)
+        setIsGenerating(false)
       }
     } catch (error) {
-      console.error('Error polling job status:', error)
-      alert('Error checking job status')
+      showError('Network Error', 'Gagal terhubung ke server saat mengecek status job', error)
       setIsGenerating(false)
     }
   }
@@ -506,6 +526,15 @@ Di video ini, kita bahas ${topicText} dengan pendekatan yang relate sama kehidup
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Error Modal */}
+      <ErrorModal
+        isOpen={errorState.isOpen}
+        onClose={hideError}
+        title={errorState.title}
+        message={errorState.message}
+        error={errorState.error}
+      />
     </div>
   )
 }

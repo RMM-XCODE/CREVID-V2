@@ -6,6 +6,8 @@ import { Input } from '@/components/ui/input'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
+import { ErrorModal } from '@/components/ui/error-modal'
+import { useErrorHandler } from '@/hooks/useErrorHandler'
 import { 
   Search, 
   Filter, 
@@ -46,6 +48,7 @@ export function ContentManagement() {
     withMedia: 0,
     withAudio: 0
   })
+  const { errorState, showError, hideError, handleFetchError } = useErrorHandler()
 
   // Fetch data dari backend
   useEffect(() => {
@@ -57,13 +60,21 @@ export function ContentManagement() {
     try {
       setLoading(true)
       const response = await fetch('http://localhost:3001/api/content')
+      
+      if (!response.ok) {
+        await handleFetchError(response, 'Gagal mengambil daftar content')
+        return
+      }
+      
       const data = await response.json()
       
       if (data.success) {
         setContents(data.data || [])
+      } else {
+        showError('Content Error', 'Gagal mengambil daftar content', data)
       }
     } catch (error) {
-      console.error('Error fetching contents:', error)
+      showError('Network Error', 'Gagal terhubung ke server', error)
     } finally {
       setLoading(false)
     }
@@ -72,6 +83,12 @@ export function ContentManagement() {
   const fetchStats = async () => {
     try {
       const response = await fetch('http://localhost:3001/api/content')
+      
+      if (!response.ok) {
+        await handleFetchError(response, 'Gagal mengambil statistik content')
+        return
+      }
+      
       const data = await response.json()
       
       if (data.success) {
@@ -82,9 +99,11 @@ export function ContentManagement() {
           withMedia: contentList.filter((c: Content) => c.hasMedia).length,
           withAudio: contentList.filter((c: Content) => c.hasAudio).length
         })
+      } else {
+        showError('Stats Error', 'Gagal mengambil statistik content', data)
       }
     } catch (error) {
-      console.error('Error fetching stats:', error)
+      showError('Network Error', 'Gagal terhubung ke server untuk statistik', error)
     }
   }
 
@@ -165,6 +184,11 @@ export function ContentManagement() {
         })
       })
       
+      if (!response.ok) {
+        await handleFetchError(response, 'Gagal mengupdate konten')
+        return
+      }
+      
       const data = await response.json()
       
       if (data.success) {
@@ -172,11 +196,10 @@ export function ContentManagement() {
         fetchContents()
         alert('Konten berhasil diupdate')
       } else {
-        throw new Error(data.error || 'Failed to update content')
+        showError('Update Error', 'Gagal mengupdate konten', data)
       }
     } catch (error) {
-      console.error('Error updating content:', error)
-      alert('Gagal mengupdate konten')
+      showError('Network Error', 'Gagal terhubung ke server saat mengupdate konten', error)
     }
     
     setEditModalOpen(false)
@@ -201,6 +224,11 @@ export function ContentManagement() {
           method: 'DELETE'
         })
         
+        if (!response.ok) {
+          await handleFetchError(response, 'Gagal menghapus konten')
+          return
+        }
+        
         const data = await response.json()
         
         if (data.success) {
@@ -208,11 +236,10 @@ export function ContentManagement() {
           fetchContents()
           alert('Konten berhasil dihapus')
         } else {
-          throw new Error(data.error || 'Failed to delete content')
+          showError('Delete Error', 'Gagal menghapus konten', data)
         }
       } catch (error) {
-        console.error('Error deleting content:', error)
-        alert('Gagal menghapus konten')
+        showError('Network Error', 'Gagal terhubung ke server saat menghapus konten', error)
       }
     }
     
@@ -236,6 +263,11 @@ export function ContentManagement() {
         })
       })
       
+      if (!response.ok) {
+        await handleFetchError(response, 'Gagal menduplikasi konten')
+        return
+      }
+      
       const data = await response.json()
       
       if (data.success) {
@@ -243,11 +275,10 @@ export function ContentManagement() {
         fetchContents()
         alert('Konten berhasil diduplikasi')
       } else {
-        throw new Error(data.error || 'Failed to duplicate content')
+        showError('Duplicate Error', 'Gagal menduplikasi konten', data)
       }
     } catch (error) {
-      console.error('Error duplicating content:', error)
-      alert('Gagal menduplikasi konten')
+      showError('Network Error', 'Gagal terhubung ke server saat menduplikasi konten', error)
     }
     
     setMoreModalOpen(false)
@@ -791,6 +822,15 @@ export function ContentManagement() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Error Modal */}
+      <ErrorModal
+        isOpen={errorState.isOpen}
+        onClose={hideError}
+        title={errorState.title}
+        message={errorState.message}
+        error={errorState.error}
+      />
     </div>
   )
 }
