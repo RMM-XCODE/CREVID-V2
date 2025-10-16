@@ -28,7 +28,7 @@ async function initializeDatabase() {
       await db.insert(appSettings).values({
         id: 'default',
         openaiApiKey: process.env.OPENAI_API_KEY ? encrypt(process.env.OPENAI_API_KEY) : null,
-        openaiModel: 'gpt-4',
+        openaiModel: 'gpt-4o',
         openaiMaxTokens: 2000,
         openaiTemperature: 0.7,
         gofileToken: process.env.GOFILE_API_TOKEN ? encrypt(process.env.GOFILE_API_TOKEN) : null,

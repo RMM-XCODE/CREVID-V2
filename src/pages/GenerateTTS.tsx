@@ -40,8 +40,8 @@ export function GenerateTTS() {
       const data = await response.json()
       
       if (data.success) {
-        // Filter hanya konten yang sudah ada script
-        const contents = (data.data || []).filter((c: any) => c.script && c.script.length > 0)
+        // Tampilkan semua content, biarkan user pilih mana yang ingin di-generate TTS
+        const contents = data.data || []
         setContentList(contents)
       }
     } catch (error) {
@@ -52,6 +52,12 @@ export function GenerateTTS() {
   }
 
   const handleGenerateTTS = async (content: any) => {
+    // Validasi script
+    if (!content.script || content.script.trim().length === 0) {
+      alert('Content ini belum memiliki script. Silakan generate content terlebih dahulu.')
+      return
+    }
+
     try {
       setIsGenerating(true)
       
@@ -177,7 +183,16 @@ export function GenerateTTS() {
                     {content.description}
                   </p>
                 </div>
-                <div className="ml-2 flex-shrink-0">
+                <div className="ml-2 flex-shrink-0 space-y-1">
+                  {content.script && content.script.trim().length > 0 ? (
+                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800">
+                      Script Ready
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-800">
+                      No Script
+                    </span>
+                  )}
                   {content.hasAudio ? (
                     <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">
                       Audio Ready
@@ -254,7 +269,7 @@ export function GenerateTTS() {
                   size="sm" 
                   variant="outline"
                   onClick={() => handleGenerateContent(content)}
-                  disabled={isGenerating || content.hasAudio}
+                  disabled={isGenerating || content.hasAudio || !content.script || content.script.trim().length === 0}
                   className="flex-1"
                 >
                   {isGenerating ? (
@@ -262,7 +277,8 @@ export function GenerateTTS() {
                   ) : (
                     <Volume2 className="h-4 w-4 mr-1" />
                   )}
-                  {content.hasAudio ? 'Generated' : 'Generate'}
+                  {content.hasAudio ? 'Generated' : 
+                   (!content.script || content.script.trim().length === 0) ? 'No Script' : 'Generate'}
                 </Button>
                 <Button 
                   size="sm" 

@@ -115,22 +115,31 @@ export function ContentManagement() {
   const handleViewContent = (content: any) => {
     setSelectedContent(content)
     setViewTitle(content.title)
-    setViewDescription(content.description)
-    setViewScript(`Halo teman-teman! Selamat datang kembali di channel RUANG TUMBUH. Hari ini kita akan membahas topik yang sangat menarik dan penting untuk dipahami, yaitu ${content.title}.
-
-Apakah kalian pernah mengalami kesulitan dalam memahami konsep ini? Jangan khawatir, karena di video ini saya akan menjelaskan secara detail dan mudah dipahami. Kita akan mulai dari konsep dasar hingga implementasi praktis yang bisa langsung kalian terapkan.
-
-Sebelum kita masuk ke pembahasan yang lebih dalam, mari kita pahami dulu konsep dasarnya. Konsep ini sebenarnya cukup sederhana jika kita memahami fundamental-fundamentalnya. Pertama, kita perlu memahami bahwa setiap teknologi atau konsep yang kita pelajari memiliki tujuan dan konteks penggunaannya masing-masing.
-
-Sekarang mari kita praktikkan langsung apa yang sudah kita pelajari. Saya akan mendemonstrasikan step-by-step bagaimana cara mengimplementasikan konsep ini dalam kehidupan nyata. Perhatikan baik-baik setiap langkahnya, karena detail-detail kecil ini yang akan membuat perbedaan besar dalam hasil akhir.
-
-Berdasarkan pengalaman saya selama bertahun-tahun di bidang ini, ada beberapa tips penting yang perlu kalian ketahui. Tips-tips ini akan membantu kalian menghindari kesalahan umum yang sering terjadi, terutama bagi pemula yang baru memulai journey mereka.
-
-Untuk kalian yang sudah memahami konsep dasar, sekarang kita akan membahas topik yang lebih advanced. Materi ini akan membantu kalian untuk mengembangkan pemahaman yang lebih mendalam dan memberikan perspektif baru tentang bagaimana mengoptimalkan penggunaan konsep ini.
-
-Nah, itu dia pembahasan lengkap tentang ${content.title}. Saya harap video ini bermanfaat untuk kalian semua. Jangan lupa untuk like, subscribe, dan nyalakan notifikasi agar kalian tidak ketinggalan video-video terbaru dari RUANG TUMBUH.
-
-Kalau ada pertanyaan atau topik yang ingin kalian bahas di video selanjutnya, tulis di kolom komentar ya. Sampai jumpa di video berikutnya, tetap semangat belajar dan terus berkembang!`)
+    setViewDescription(content.description || 'No description available')
+    
+    // Handle script content
+    let scriptContent = 'No script available'
+    if (content.script && content.script.trim().length > 0) {
+      // First try to use as plain text (most common case)
+      scriptContent = content.script
+      
+      // If it looks like JSON, try to parse it
+      if (content.script.trim().startsWith('{') || content.script.trim().startsWith('[')) {
+        try {
+          const parsed = JSON.parse(content.script)
+          if (parsed.scenes && Array.isArray(parsed.scenes)) {
+            scriptContent = parsed.scenes.map((scene: any, index: number) => 
+              `Scene ${index + 1}:\n${scene.text}`
+            ).join('\n\n')
+          }
+        } catch (error) {
+          // If JSON parsing fails, keep the original script as plain text
+          scriptContent = content.script
+        }
+      }
+    }
+    
+    setViewScript(scriptContent)
     setViewModalOpen(true)
   }
 
@@ -141,23 +150,106 @@ Kalau ada pertanyaan atau topik yang ingin kalian bahas di video selanjutnya, tu
     setMoreModalOpen(true)
   }
 
-  const handleSaveEdit = () => {
-    // Simulasi save - dalam implementasi nyata akan hit API
-    console.log('Saving content:', { title: editTitle, description: editDescription })
+  const handleSaveEdit = async () => {
+    if (!selectedContent) return
+    
+    try {
+      const response = await fetch(`http://localhost:3001/api/content/${selectedContent.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          title: editTitle,
+          description: editDescription
+        })
+      })
+      
+      const data = await response.json()
+      
+      if (data.success) {
+        // Refresh content list
+        fetchContents()
+        alert('Konten berhasil diupdate')
+      } else {
+        throw new Error(data.error || 'Failed to update content')
+      }
+    } catch (error) {
+      console.error('Error updating content:', error)
+      alert('Gagal mengupdate konten')
+    }
+    
     setEditModalOpen(false)
     setSelectedContent(null)
   }
 
-  const handleDeleteContent = () => {
-    // Simulasi delete - dalam implementasi nyata akan hit API
-    console.log('Deleting content:', selectedContent?.id)
+  const handleEditContent = () => {
+    if (selectedContent) {
+      setEditTitle(selectedContent.title)
+      setEditDescription(selectedContent.description || '')
+      setMoreModalOpen(false)
+      setEditModalOpen(true)
+    }
+  }
+
+  const handleDeleteContent = async () => {
+    if (!selectedContent) return
+    
+    if (confirm('Apakah Anda yakin ingin menghapus konten ini?')) {
+      try {
+        const response = await fetch(`http://localhost:3001/api/content/${selectedContent.id}`, {
+          method: 'DELETE'
+        })
+        
+        const data = await response.json()
+        
+        if (data.success) {
+          // Refresh content list
+          fetchContents()
+          alert('Konten berhasil dihapus')
+        } else {
+          throw new Error(data.error || 'Failed to delete content')
+        }
+      } catch (error) {
+        console.error('Error deleting content:', error)
+        alert('Gagal menghapus konten')
+      }
+    }
+    
     setMoreModalOpen(false)
     setSelectedContent(null)
   }
 
-  const handleDuplicateContent = () => {
-    // Simulasi duplicate - dalam implementasi nyata akan hit API
-    console.log('Duplicating content:', selectedContent?.id)
+  const handleDuplicateContent = async () => {
+    if (!selectedContent) return
+    
+    try {
+      const response = await fetch('http://localhost:3001/api/content', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          title: `${selectedContent.title} (Copy)`,
+          description: selectedContent.description,
+          script: selectedContent.script
+        })
+      })
+      
+      const data = await response.json()
+      
+      if (data.success) {
+        // Refresh content list
+        fetchContents()
+        alert('Konten berhasil diduplikasi')
+      } else {
+        throw new Error(data.error || 'Failed to duplicate content')
+      }
+    } catch (error) {
+      console.error('Error duplicating content:', error)
+      alert('Gagal menduplikasi konten')
+    }
+    
     setMoreModalOpen(false)
     setSelectedContent(null)
   }
@@ -410,13 +502,13 @@ Kalau ada pertanyaan atau topik yang ingin kalian bahas di video selanjutnya, tu
 
       {/* View Modal */}
       <Dialog open={viewModalOpen} onOpenChange={setViewModalOpen}>
-        <DialogContent className="w-[95vw] max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+        <DialogContent className="dialog-content">
+          <DialogHeader className="pb-4 border-b">
+            <DialogTitle className="flex items-center gap-2 text-xl font-semibold">
               <Eye className="h-5 w-5" />
               Detail Konten
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-sm text-muted-foreground mt-1">
               Lihat dan edit konten secara langsung
             </DialogDescription>
           </DialogHeader>
@@ -592,13 +684,13 @@ Kalau ada pertanyaan atau topik yang ingin kalian bahas di video selanjutnya, tu
 
       {/* Edit Modal */}
       <Dialog open={editModalOpen} onOpenChange={setEditModalOpen}>
-        <DialogContent className="w-[95vw] max-w-2xl">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+        <DialogContent className="dialog-content">
+          <DialogHeader className="pb-4 border-b">
+            <DialogTitle className="flex items-center gap-2 text-xl font-semibold">
               <Edit className="h-5 w-5" />
               Edit Konten
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-sm text-muted-foreground mt-1">
               Ubah informasi dasar konten
             </DialogDescription>
           </DialogHeader>
@@ -639,18 +731,27 @@ Kalau ada pertanyaan atau topik yang ingin kalian bahas di video selanjutnya, tu
 
       {/* More Actions Modal */}
       <Dialog open={moreModalOpen} onOpenChange={setMoreModalOpen}>
-        <DialogContent className="w-[95vw] max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+        <DialogContent className="dialog-content">
+          <DialogHeader className="pb-4 border-b">
+            <DialogTitle className="flex items-center gap-2 text-lg font-semibold">
               <MoreVertical className="h-5 w-5" />
               Aksi Lainnya
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-sm text-muted-foreground mt-1">
               Pilih aksi yang ingin dilakukan pada konten ini
             </DialogDescription>
           </DialogHeader>
           
           <div className="space-y-2">
+            <Button 
+              variant="outline" 
+              className="w-full justify-start" 
+              onClick={handleEditContent}
+            >
+              <Edit className="h-4 w-4 mr-2" />
+              Edit Konten
+            </Button>
+            
             <Button 
               variant="outline" 
               className="w-full justify-start" 

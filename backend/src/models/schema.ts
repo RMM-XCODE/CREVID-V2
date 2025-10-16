@@ -62,7 +62,7 @@ export const appSettings = sqliteTable('app_settings', {
   id: text('id').primaryKey(),
   // OpenAI Config
   openaiApiKey: text('openai_api_key'),
-  openaiModel: text('openai_model').default('gpt-4'),
+  openaiModel: text('openai_model').default('gpt-4o'),
   openaiMaxTokens: integer('openai_max_tokens').default(2000),
   openaiTemperature: real('openai_temperature').default(0.7),
   // GoFile Config

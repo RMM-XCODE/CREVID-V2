@@ -320,8 +320,49 @@ ${presets}`
     )
   }
 
-  const selectContent = (content: any) => {
-    setSelectedContent(content)
+  const selectContent = async (content: any) => {
+    try {
+      // Fetch detailed content with scenes data
+      const response = await fetch(`http://localhost:3001/api/content/${content.id}`)
+      const data = await response.json()
+      
+      if (data.success && data.data) {
+        // Parse script to extract scenes if available
+        let scenesData = []
+        if (data.data.script) {
+          try {
+            const parsed = JSON.parse(data.data.script)
+            scenesData = parsed.scenes || []
+          } catch (error) {
+            // If script is not JSON, create a single scene
+            scenesData = [{
+              id: 1,
+              text: data.data.script,
+              mediaPrompt: data.data.script
+            }]
+          }
+        }
+        
+        setSelectedContent({
+          ...data.data,
+          scenesData: scenesData
+        })
+      } else {
+        // Fallback to original content with empty scenes
+        setSelectedContent({
+          ...content,
+          scenesData: []
+        })
+      }
+    } catch (error) {
+      console.error('Error fetching content details:', error)
+      // Fallback to original content with empty scenes
+      setSelectedContent({
+        ...content,
+        scenesData: []
+      })
+    }
+    
     setSelectedScenes([])
     setGeneratedMedia(null)
   }
@@ -418,7 +459,7 @@ Aturan Prompt Visual per Scene:
               <CardTitle>Scene Selection</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {selectedContent.scenesData.map((scene: any) => (
+              {selectedContent?.scenesData?.length > 0 ? selectedContent.scenesData.map((scene: any) => (
                 <div 
                   key={scene.id}
                   className={`border rounded-lg p-4 cursor-pointer transition-colors ${
@@ -504,29 +545,41 @@ Aturan Prompt Visual per Scene:
                     </Button>
                   </div>
                 </div>
-              ))}
+              )) : (
+                <div className="text-center py-8">
+                  <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                  <h3 className="text-lg font-medium mb-2">No Scenes Available</h3>
+                  <p className="text-muted-foreground mb-4">
+                    This content doesn't have any scenes to generate media for.
+                  </p>
+                  <Button variant="outline" onClick={backToContentList}>
+                    <ArrowLeft className="h-4 w-4 mr-2" />
+                    Back to Content List
+                  </Button>
+                </div>
+              )}
 
-              <Button 
-                onClick={handleGenerateMedia}
-                disabled={selectedScenes.length === 0 || isGenerating}
-                className="w-full"
-              >
-                {isGenerating ? (
-                  <>
-                    <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                    Generating...
-                  </>
-                ) : (
-                  <>
-                    <Wand2 className="mr-2 h-4 w-4" />
-                    Generate Media ({selectedScenes.length} scenes)
-                  </>
-                )}
-              </Button>
+              {selectedContent?.scenesData?.length > 0 && (
+                <Button 
+                  onClick={handleGenerateMedia}
+                  disabled={selectedScenes.length === 0 || isGenerating}
+                  className="w-full"
+                >
+                  {isGenerating ? (
+                    <>
+                      <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <Wand2 className="mr-2 h-4 w-4" />
+                      Generate Media ({selectedScenes.length} scenes)
+                    </>
+                  )}
+                </Button>
+              )}
             </CardContent>
           </Card>
-
-
         </div>
 
         {/* Generated Media Results */}

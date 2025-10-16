@@ -20,7 +20,7 @@ export function Settings() {
   const [saving, setSaving] = useState(false)
   const [settings, setSettings] = useState({
     openaiApiKey: '',
-    openaiModel: 'gpt-4',
+    openaiModel: 'gpt-4o',
     openaiMaxTokens: 2000,
     openaiTemperature: 0.7,
     gofileToken: '',
@@ -104,8 +104,8 @@ export function Settings() {
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="max-w-7xl mx-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-6">
         {/* API Configuration */}
         <Card>
           <CardHeader>
@@ -146,10 +146,15 @@ export function Settings() {
                 onChange={(e) => setSettings({...settings, openaiModel: e.target.value})}
                 className="w-full p-2 border rounded-md"
               >
-                <option value="gpt-4">GPT-4</option>
+                <option value="gpt-4o">GPT-4o (Latest)</option>
+                <option value="gpt-4o-mini">GPT-4o Mini</option>
                 <option value="gpt-4-turbo">GPT-4 Turbo</option>
+                <option value="gpt-4">GPT-4</option>
                 <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
               </select>
+              <p className="text-xs text-muted-foreground mt-1">
+                GPT-4o adalah model terbaru dengan performa optimal
+              </p>
             </div>
 
             <div>
@@ -243,6 +248,103 @@ export function Settings() {
           </CardContent>
         </Card>
 
+        {/* QStash Configuration */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center space-x-2">
+              <SettingsIcon className="h-5 w-5" />
+              <CardTitle>QStash Configuration</CardTitle>
+            </div>
+            <CardDescription>
+              Konfigurasi QStash untuk background job processing
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <label className="text-sm font-medium mb-2 block">QStash Token</label>
+              <div className="relative">
+                <Input
+                  type={showApiKey ? "text" : "password"}
+                  value={settings.qstashToken}
+                  onChange={(e) => setSettings({...settings, qstashToken: e.target.value})}
+                  placeholder="Masukkan QStash Token"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-0 top-0 h-full px-3"
+                  onClick={() => setShowApiKey(!showApiKey)}
+                >
+                  {showApiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Token untuk mengakses QStash API
+              </p>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium mb-2 block">Current Signing Key</label>
+              <div className="relative">
+                <Input
+                  type={showApiKey ? "text" : "password"}
+                  value={settings.qstashCurrentSigningKey}
+                  onChange={(e) => setSettings({...settings, qstashCurrentSigningKey: e.target.value})}
+                  placeholder="Masukkan Current Signing Key"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-0 top-0 h-full px-3"
+                  onClick={() => setShowApiKey(!showApiKey)}
+                >
+                  {showApiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Key untuk verifikasi signature webhook
+              </p>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium mb-2 block">Next Signing Key</label>
+              <div className="relative">
+                <Input
+                  type={showApiKey ? "text" : "password"}
+                  value={settings.qstashNextSigningKey}
+                  onChange={(e) => setSettings({...settings, qstashNextSigningKey: e.target.value})}
+                  placeholder="Masukkan Next Signing Key"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-0 top-0 h-full px-3"
+                  onClick={() => setShowApiKey(!showApiKey)}
+                >
+                  {showApiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Key untuk rotasi signature (opsional)
+              </p>
+            </div>
+
+            <div className="p-3 bg-green-50 rounded-lg border border-green-200">
+              <h4 className="text-sm font-medium text-green-800 mb-2">QStash Features:</h4>
+              <div className="text-xs text-green-700 space-y-1">
+                <p>⚡ Background job processing</p>
+                <p>🔄 Automatic retry mechanism</p>
+                <p>📊 Job status tracking</p>
+                <p>⏰ Scheduled task execution</p>
+                <p>🔐 Secure webhook verification</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* User Profile */}
         <Card>
           <CardHeader>
@@ -288,18 +390,18 @@ export function Settings() {
         </div>
 
         {/* Preferences - Full Width */}
-        <Card className="lg:col-span-3">
+        <Card className="xl:col-span-4">
           <CardHeader>
             <div className="flex items-center space-x-2">
               <SettingsIcon className="h-5 w-5" />
-              <CardTitle>App Preferences</CardTitle>
+              <CardTitle>App Preferences & Job Configuration</CardTitle>
             </div>
             <CardDescription>
-              Pengaturan preferensi dan konfigurasi aplikasi
+              Pengaturan preferensi aplikasi dan konfigurasi job processing
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
               <div className="space-y-4">
                 <h4 className="font-medium text-sm text-gray-700">Notifications</h4>
                 <div className="flex items-center justify-between">
@@ -392,12 +494,71 @@ export function Settings() {
                   </select>
                 </div>
               </div>
+
+              <div className="space-y-4">
+                <h4 className="font-medium text-sm text-gray-700">Job Processing</h4>
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Rate Limit (per hour)</label>
+                  <Input
+                    type="number"
+                    value={settings.rateLimitPerHour}
+                    onChange={(e) => setSettings({...settings, rateLimitPerHour: parseInt(e.target.value) || 100})}
+                    placeholder="100"
+                    className="w-full"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Maksimal job per jam
+                  </p>
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Max Concurrent Jobs</label>
+                  <Input
+                    type="number"
+                    value={settings.maxConcurrentJobs}
+                    onChange={(e) => setSettings({...settings, maxConcurrentJobs: parseInt(e.target.value) || 5})}
+                    placeholder="5"
+                    className="w-full"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Job bersamaan maksimal
+                  </p>
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Job Timeout (minutes)</label>
+                  <Input
+                    type="number"
+                    value={settings.jobTimeoutMinutes}
+                    onChange={(e) => setSettings({...settings, jobTimeoutMinutes: parseInt(e.target.value) || 10})}
+                    placeholder="10"
+                    className="w-full"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Timeout untuk setiap job
+                  </p>
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Retry Attempts</label>
+                  <Input
+                    type="number"
+                    value={settings.jobRetryAttempts}
+                    onChange={(e) => setSettings({...settings, jobRetryAttempts: parseInt(e.target.value) || 3})}
+                    placeholder="3"
+                    className="w-full"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Jumlah retry jika gagal
+                  </p>
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>
 
       {/* Save Button */}
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-7xl mx-auto">
         <div className="flex justify-center mt-8">
           <Button 
             onClick={handleSaveSettings} 

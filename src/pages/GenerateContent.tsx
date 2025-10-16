@@ -115,7 +115,15 @@ Validation Rules:
         setProgress(job.progress || 0)
         
         if (job.status === 'completed') {
-          setGeneratedContent(job.result_data)
+          console.log('Job completed, result_data:', job.result_data)
+          
+          // Validate result data structure
+          if (job.result_data && job.result_data.scenes && Array.isArray(job.result_data.scenes)) {
+            setGeneratedContent(job.result_data)
+          } else {
+            console.error('Invalid result data structure:', job.result_data)
+            alert('Generated content has invalid structure')
+          }
           setIsGenerating(false)
         } else if (job.status === 'failed') {
           throw new Error(job.error_message || 'Job failed')
@@ -392,7 +400,7 @@ Di video ini, kita bahas ${topicText} dengan pendekatan yang relate sama kehidup
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {generatedContent.scenes.map((scene: any) => (
+              {generatedContent?.scenes?.length > 0 ? generatedContent.scenes.map((scene: any) => (
                 <div key={scene.id} className="border rounded-lg p-4">
                   <div className="flex items-center justify-between mb-3">
                     <h4 className="font-medium">Scene {scene.id}</h4>
@@ -408,7 +416,15 @@ Di video ini, kita bahas ${topicText} dengan pendekatan yang relate sama kehidup
                     </p>
                   </div>
                 </div>
-              ))}
+              )) : (
+                <div className="text-center py-8">
+                  <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                  <h3 className="text-lg font-medium mb-2">No Scenes Generated</h3>
+                  <p className="text-muted-foreground">
+                    The generated content doesn't have any scenes to display.
+                  </p>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>

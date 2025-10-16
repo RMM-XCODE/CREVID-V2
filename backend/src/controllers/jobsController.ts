@@ -53,10 +53,12 @@ export const getJob = asyncHandler(async (req: Request, res: Response) => {
       job_id: jobData.id,
       status: jobData.status as any,
       progress: jobData.progress || 0,
-      result_data: jobData.status === 'completed' ? {
-        files: jobFiles,
-        goFileFolder
-      } : undefined,
+      result_data: jobData.status === 'completed' ? (
+        jobData.resultData || {
+          files: jobFiles,
+          goFileFolder
+        }
+      ) : undefined,
       error_message: jobData.errorMessage || undefined
     }
   };

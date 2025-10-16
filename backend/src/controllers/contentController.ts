@@ -53,7 +53,7 @@ export const generateContent = asyncHandler(async (req: Request, res: Response) 
     await db.update(jobs)
       .set({ 
         status: 'completed',
-        resultData: { contentId, ...generatedContent },
+        resultData: generatedContent, // Store the generated content directly
         completedAt: new Date().toISOString(),
         progress: 100
       })
@@ -122,6 +122,7 @@ export const getContents = asyncHandler(async (req: Request, res: Response) => {
       id: contents.id,
       title: contents.title,
       description: contents.description,
+      script: contents.script,
       status: contents.status,
       scenesCount: contents.scenesCount,
       createdAt: contents.createdAt,

@@ -61,3 +61,114 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Fix for modal blur and scale issues */
+@layer components {
+  /* Dialog Content - Remove all transforms and filters that cause blur */
+  [data-radix-dialog-content] {
+    transform: translate(-50%, -50%) !important;
+    filter: none !important;
+    will-change: auto !important;
+    backface-visibility: visible !important;
+    perspective: none !important;
+    transform-style: flat !important;
+    
+    /* Perfect centering */
+    position: fixed !important;
+    top: 50% !important;
+    left: 50% !important;
+    
+    /* Ensure proper display */
+    display: flex !important;
+    flex-direction: column !important;
+    
+    /* Better spacing */
+    padding: 1.5rem !important;
+    gap: 1rem !important;
+  }
+  
+  /* Dialog Overlay - Only blur the background */
+  [data-radix-dialog-overlay] {
+    backdrop-filter: blur(4px);
+    background-color: rgba(0, 0, 0, 0.5);
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 50 !important;
+  }
+  
+  /* Ensure dialog portal doesn't have transforms */
+  [data-radix-portal] {
+    transform: none !important;
+    filter: none !important;
+  }
+  
+  /* Fix for any scaling issues */
+  .dialog-content {
+    zoom: 1 !important;
+    
+    /* Better responsive sizing */
+    max-height: 85vh !important;
+    width: 80vw !important;
+    max-width: 1024px !important;
+    min-width: 320px !important;
+    
+    /* Remove any margins that might offset centering */
+    margin: 0 !important;
+    
+    /* Improved shadow and border */
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+    border-radius: 0.75rem !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    
+    /* Ensure proper background */
+    background: white !important;
+  }
+  
+  /* Prevent any CSS animations that might cause blur */
+  [data-state="open"][data-radix-dialog-content] {
+    animation: none !important;
+  }
+  
+  /* Better responsive behavior */
+  @media (max-width: 768px) {
+    [data-radix-dialog-content] {
+      transform: translate(-50%, -50%) !important;
+      width: 95vw !important;
+      max-width: 95vw !important;
+    }
+    
+    .dialog-content {
+      max-height: 90vh !important;
+      max-width: 95vw !important;
+      width: 100% !important;
+    }
+  }
+  
+  /* Tablet adjustments */
+  @media (min-width: 769px) and (max-width: 1024px) {
+    [data-radix-dialog-content] {
+      transform: translate(-50%, -50%) !important;
+      width: 90vw !important;
+      max-width: 90vw !important;
+    }
+    
+    .dialog-content {
+      max-width: 90vw !important;
+      width: 100% !important;
+    }
+  }
+  
+  /* Desktop adjustments */
+  @media (min-width: 1025px) {
+    [data-radix-dialog-content] {
+      transform: translate(-50%, -50%) !important;
+      width: auto !important;
+      max-width: 1024px !important;
+    }
+    
+    .dialog-content {
+      width: 80vw !important;
+      max-width: 1024px !important;
+    }
+  }
+}
